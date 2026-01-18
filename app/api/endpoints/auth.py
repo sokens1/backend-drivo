@@ -49,10 +49,12 @@ async def signup(user_in: UserCreate):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Signup Error: {e}")
+        import traceback
+        error_msg = traceback.format_exc()
+        print(f"Signup Error: {error_msg}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de l'inscription: {str(e)}"
+            detail=f"Erreur interne: {str(e)}"
         )
 
 @router.post("/login", response_model=Token)
