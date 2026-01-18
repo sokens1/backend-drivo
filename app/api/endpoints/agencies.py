@@ -85,7 +85,10 @@ async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
         print(f"CRITICAL Dashboard Error: {error_info}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur technique Dashboard: {str(e)}"
+            detail={
+                "error": str(e),
+                "traceback": error_info
+            }
         )
 
 @router.post("/me/logo", status_code=status.HTTP_200_OK)
