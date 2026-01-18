@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 from app.core.config import settings
@@ -11,6 +12,15 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 app = FastAPI(title="Drivo API", version="1.0.0")
+
+# Configuration CORS pour autoriser le frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En production, remplacer par l'URL exacte du frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Créer le dossier uploads si il n'existe pas
 if not os.path.exists("uploads"):
