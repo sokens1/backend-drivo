@@ -18,16 +18,33 @@ async def signup(user_in: UserCreate):
                 detail="Cet email est déjà utilisé.",
             )
         
+        # Déterminer le rôle (agence ou client)
+        role = user_in.role if user_in.role in ["client", "agency", "agence"] else "client"
+        if role == "agency":
+            role = "agence"  # Normaliser
+
         # Créer le nouvel utilisateur
         new_user = User(
             email=user_in.email,
             password_hash=get_password_hash(user_in.password),
             full_name=user_in.full_name,
             phone=user_in.phone,
-            role="client"
+            role=role
         )
         
         await new_user.insert()
+
+        # Si c'est une agence, créer le profil agence
+        if role == "agence" and user_in.agency_name:
+            from app.models.agency import Agency
+            agency = Agency(
+                user_id=new_user.id,
+                name=user_in.agency_name,
+                address="",
+                phone=user_in.phone
+            )
+            await agency.insert()
+
         return new_user
     except HTTPException:
         raise
