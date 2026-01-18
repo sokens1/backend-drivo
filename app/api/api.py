@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from app.api.endpoints import auth, vehicles, bookings, users, agencies
 
 api_router = APIRouter()
