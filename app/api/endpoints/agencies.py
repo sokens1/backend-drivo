@@ -44,39 +44,50 @@ async def update_my_agency(
 @router.get("/dashboard", response_model=AgencyStats)
 async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
     try:
+        print(f"DEBUG: Dashboard requested for user {current_user.id}")
         agency = await Agency.find_one(Agency.user_id == current_user.id)
         if not agency:
+            print(f"DEBUG: Agency profile not found for user {current_user.id}")
             raise HTTPException(status_code=404, detail="Profil d'agence non trouvé")
 
-        # Statistiques
+        # Statistiques véhicules
         agency_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).to_list()
         total_vehicles = len(agency_vehicles)
+        total_views = sum(int(v.views or 0) for v in agency_vehicles)
         
-        # Sécurisation contre les valeurs nulles (si migrées de versions précédentes)
-        total_views = sum((v.views or 0) for v in agency_vehicles)
-        
+        # Statistiques réservations
         vehicle_ids = [v.id for v in agency_vehicles]
         reservations = await Reservation.find(Reservation.vehicle_id.in_(vehicle_ids)).to_list()
         
         total_reservations = len(reservations)
-        total_revenue = sum((r.total_price or 0) for r in reservations if r.status in ["completed", "confirmed"])
         
-        # Véhicules les plus vus (sécurisé)
+        # Calcul du revenu avec conversion explicite en float
+        total_revenue = 0.0
+        for r in reservations:
+            if r.status in ["completed", "confirmed"]:
+                total_revenue += float(r.total_price or 0.0)
+        
+        # Véhicules les plus vus
         most_viewed = sorted(agency_vehicles, key=lambda x: (x.views or 0), reverse=True)[:5]
         
-        return {
-            "total_vehicles": total_vehicles,
-            "total_views": total_views,
-            "total_reservations": total_reservations,
-            "total_revenue": total_revenue,
-            "most_viewed_vehicles": most_viewed
-        }
+        print(f"DEBUG: Dashboard computed: veh={total_vehicles}, views={total_views}, rev={total_revenue}")
+        
+        return AgencyStats(
+            total_vehicles=int(total_vehicles),
+            total_views=int(total_views),
+            total_reservations=int(total_reservations),
+            total_revenue=float(total_revenue),
+            most_viewed_vehicles=most_viewed
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
-        print(f"Dashboard Error: {traceback.format_exc()}")
+        error_info = traceback.format_exc()
+        print(f"CRITICAL Dashboard Error: {error_info}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur Dashboard: {str(e)}"
+            detail=f"Erreur technique Dashboard: {str(e)}"
         )
 
 @router.post("/me/logo", status_code=status.HTTP_200_OK)
