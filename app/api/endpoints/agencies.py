@@ -43,26 +43,41 @@ async def update_my_agency(
 
 @router.get("/dashboard", response_model=AgencyStats)
 async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
-    agency = await Agency.find_one(Agency.user_id == current_user.id)
-    if not agency:
-        raise HTTPException(status_code=404, detail="Profil d'agence non trouvé")
+    try:
+        agency = await Agency.find_one(Agency.user_id == current_user.id)
+        if not agency:
+            raise HTTPException(status_code=404, detail="Profil d'agence non trouvé")
 
-    # Statistiques
-    total_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).count()
-    reservations = await Reservation.find(Reservation.vehicle_id.in_([v.id async for v in Vehicle.find(Vehicle.agency_id == agency.id)])).to_list()
-    
-    total_reservations = len(reservations)
-    total_revenue = sum(r.total_price for r in reservations if r.status == "completed" or r.status == "confirmed")
-    
-    # Véhicules les plus vus
-    most_viewed = await Vehicle.find(Vehicle.agency_id == agency.id).sort("-views").limit(5).to_list()
-    
-    return {
-        "total_vehicles": total_vehicles,
-        "total_reservations": total_reservations,
-        "total_revenue": total_revenue,
-        "most_viewed_vehicles": [v.model_dump() for v in most_viewed]
-    }
+        # Statistiques
+        agency_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).to_list()
+        total_vehicles = len(agency_vehicles)
+        
+        # Sécurisation contre les valeurs nulles (si migrées de versions précédentes)
+        total_views = sum((v.views or 0) for v in agency_vehicles)
+        
+        vehicle_ids = [v.id for v in agency_vehicles]
+        reservations = await Reservation.find(Reservation.vehicle_id.in_(vehicle_ids)).to_list()
+        
+        total_reservations = len(reservations)
+        total_revenue = sum((r.total_price or 0) for r in reservations if r.status in ["completed", "confirmed"])
+        
+        # Véhicules les plus vus (sécurisé)
+        most_viewed = sorted(agency_vehicles, key=lambda x: (x.views or 0), reverse=True)[:5]
+        
+        return {
+            "total_vehicles": total_vehicles,
+            "total_views": total_views,
+            "total_reservations": total_reservations,
+            "total_revenue": total_revenue,
+            "most_viewed_vehicles": [v.model_dump() for v in most_viewed]
+        }
+    except Exception as e:
+        import traceback
+        print(f"Dashboard Error: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur Dashboard: {str(e)}"
+        )
 
 @router.post("/me/logo", status_code=status.HTTP_200_OK)
 async def upload_agency_logo(
