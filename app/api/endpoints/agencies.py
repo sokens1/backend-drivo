@@ -69,7 +69,7 @@ async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
             "total_views": total_views,
             "total_reservations": total_reservations,
             "total_revenue": total_revenue,
-            "most_viewed_vehicles": [v.model_dump() for v in most_viewed]
+            "most_viewed_vehicles": most_viewed
         }
     except Exception as e:
         import traceback
