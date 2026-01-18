@@ -35,10 +35,10 @@ class VehicleUpdate(BaseModel):
 class VehicleOut(VehicleBase):
     id: PydanticObjectId
     agency_id: PydanticObjectId
-    images: List[str]
-    views: int
-    available: bool
-    created_at: datetime
+    images: List[str] = []
+    views: Optional[int] = 0
+    available: Optional[bool] = True
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
