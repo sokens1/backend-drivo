@@ -7,6 +7,8 @@ from app.models.user import User
 from app.models.vehicle import Vehicle
 from app.models.reservation import Reservation
 from app.models.agency import Agency
+from app.models.notification import Notification
+from app.models.message import Message
 from app.api.api import api_router
 from fastapi.staticfiles import StaticFiles
 import os
@@ -14,9 +16,15 @@ import os
 app = FastAPI(title="Drivo API", version="1.0.0")
 
 # Configuration CORS pour autoriser le frontend
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://drivo-frontend.vercel.app", # Exemple pour le futur déploiement front
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En production, remplacer par l'URL exacte du frontend
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,7 +48,9 @@ async def startup_db_client():
             User,
             Vehicle,
             Reservation,
-            Agency
+            Agency,
+            Notification,
+            Message
         ]
     )
 

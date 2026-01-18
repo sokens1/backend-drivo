@@ -55,6 +55,14 @@ Le backend utilise des **JSON Web Tokens (JWT)**.
 - `POST /airtel/collect` : Initier un paiement. Renvoie un `transaction_id`.
 - `POST /airtel/callback` : Simuler la validation du paiement (pour tester le changement de statut de la réservation).
 
+### 7. Notifications (`/notifications`)
+- `GET /` : Liste des notifications de l'utilisateur (Triées par date décroissante).
+- `PATCH /{id}/read` : Marquer une notification comme lue.
+
+### 8. Messages (`/messages`)
+- `GET /` : Liste tous les messages envoyés ou reçus par l'utilisateur.
+- `POST /` : Envoyer un nouveau message.
+
 ---
 
 ## 🎯 Cas d'usage spécifiques
