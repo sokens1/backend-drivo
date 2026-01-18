@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, status, Depends, File, UploadFile
 import os
 import uuid
+from beanie.operators import In
 from app.models.agency import Agency
 from app.models.user import User
 from app.models.vehicle import Vehicle
@@ -44,31 +45,25 @@ async def update_my_agency(
 @router.get("/dashboard", response_model=AgencyStats)
 async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
     try:
-        print(f"DEBUG: Dashboard requested for user {current_user.id}")
         agency = await Agency.find_one(Agency.user_id == current_user.id)
         if not agency:
-            print(f"DEBUG: Agency profile not found for user {current_user.id}")
             raise HTTPException(status_code=404, detail="Profil d'agence non trouvé")
 
         # Statistiques
-        total_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).count()
-        
-        # Fetch all vehicles for the agency to get their IDs and views
         agency_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).to_list()
+        total_vehicles = len(agency_vehicles)
+        total_views = sum(int(v.views or 0) for v in agency_vehicles)
+        
         vehicle_ids = [v.id for v in agency_vehicles]
         
-        # Calculate total views
-        total_views = sum(int(v.views or 0) for v in agency_vehicles)
-
-        reservations = await Reservation.find(Reservation.vehicle_id.in_(vehicle_ids)).to_list()
+        # Correction de l'opérateur IN pour Beanie
+        reservations = await Reservation.find(In(Reservation.vehicle_id, vehicle_ids)).to_list()
         
         total_reservations = len(reservations)
         total_revenue = sum(float(r.total_price or 0.0) for r in reservations if r.status in ["completed", "confirmed"])
         
         # Véhicules les plus vus
         most_viewed = await Vehicle.find(Vehicle.agency_id == agency.id).sort("-views").limit(5).to_list()
-        
-        print(f"DEBUG: Dashboard computed: veh={total_vehicles}, views={total_views}, rev={total_revenue}")
         
         return AgencyStats(
             total_vehicles=int(total_vehicles),
@@ -80,15 +75,9 @@ async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        error_info = traceback.format_exc()
-        print(f"CRITICAL Dashboard Error: {error_info}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error": str(e),
-                "traceback": error_info
-            }
+            detail=f"Erreur technique Dashboard: {str(e)}"
         )
 
 @router.post("/me/logo", status_code=status.HTTP_200_OK)
