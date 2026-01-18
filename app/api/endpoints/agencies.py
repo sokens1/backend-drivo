@@ -1,5 +1,7 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, File, UploadFile
+import os
+import uuid
 from app.models.agency import Agency
 from app.models.user import User
 from app.models.vehicle import Vehicle
@@ -8,6 +10,12 @@ from app.schemas.agency import AgencyOut, AgencyUpdate, AgencyStats
 from app.api.deps import get_current_user
 
 router = APIRouter()
+
+@router.get("/", response_model=List[AgencyOut])
+async def list_agencies(skip: int = 0, limit: int = 20):
+    """Liste publique de toutes les agences"""
+    agencies = await Agency.find().skip(skip).limit(limit).to_list()
+    return agencies
 
 @router.get("/me", response_model=AgencyOut)
 async def get_my_agency(current_user: User = Depends(get_current_user)):
@@ -55,3 +63,28 @@ async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
         "total_revenue": total_revenue,
         "most_viewed_vehicles": [v.model_dump() for v in most_viewed]
     }
+
+@router.post("/me/logo", status_code=status.HTTP_200_OK)
+async def upload_agency_logo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    agency = await Agency.find_one(Agency.user_id == current_user.id)
+    if not agency:
+        raise HTTPException(status_code=404, detail="Profil d'agence non trouvé")
+    
+    upload_dir = "uploads/logos"
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+    
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = os.path.join(upload_dir, filename)
+    
+    with open(filepath, "wb") as buffer:
+        content = await file.read()
+        buffer.write(content)
+    
+    agency.logo_url = f"/uploads/logos/{filename}"
+    await agency.save()
+    return {"logo_url": agency.logo_url, "message": "Logo uploadé avec succès"}

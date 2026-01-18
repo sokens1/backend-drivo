@@ -45,6 +45,7 @@ async def create_vehicle(
 async def list_vehicles(
     brand: Optional[str] = None,
     type: Optional[str] = None,
+    agency_id: Optional[str] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
     skip: int = 0,
@@ -55,6 +56,8 @@ async def list_vehicles(
         query["brand"] = brand
     if type:
         query["type"] = type
+    if agency_id:
+        query["agency_id"] = PydanticObjectId(agency_id)
     
     # Filtres de prix complexes avec MongoDB
     if min_price or max_price:
@@ -114,3 +117,42 @@ async def upload_vehicle_images(
     vehicle.images.extend(image_urls)
     await vehicle.save()
     return vehicle
+
+@router.put("/{id}", response_model=VehicleOut)
+async def update_vehicle(
+    id: PydanticObjectId,
+    vehicle_in: VehicleUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    vehicle = await Vehicle.get(id)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Vérifier que l'utilisateur est propriétaire (agence) ou admin
+    agency = await Agency.find_one(Agency.user_id == current_user.id)
+    if agency and vehicle.agency_id != agency.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Non autorisé")
+    
+    update_data = vehicle_in.model_dump(exclude_unset=True)
+    for field in update_data:
+        setattr(vehicle, field, update_data[field])
+    
+    await vehicle.save()
+    return vehicle
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vehicle(
+    id: PydanticObjectId,
+    current_user: User = Depends(get_current_user)
+):
+    vehicle = await Vehicle.get(id)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+    
+    # Vérifier que l'utilisateur est propriétaire (agence) ou admin
+    agency = await Agency.find_one(Agency.user_id == current_user.id)
+    if agency and vehicle.agency_id != agency.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Non autorisé")
+    
+    await vehicle.delete()
+    return None

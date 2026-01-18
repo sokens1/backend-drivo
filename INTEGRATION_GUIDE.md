@@ -22,14 +22,17 @@ Le backend utilise des **JSON Web Tokens (JWT)**.
 - `POST /login` : Connexion et récupération du token.
 
 ### 2. Catalogue de Véhicules (`/vehicles`)
-- `GET /` : Liste des véhicules (Supporte filtres: `brand`, `type`, `min_price`, `max_price`).
+- `GET /` : Liste des véhicules (Filtres: `brand`, `type`, `agency_id`, `min_price`, `max_price`, `skip`, `limit`).
 - `GET /{id}` : Détails d'un véhicule (Incrémente automatiquement le compteur de vues).
 - `POST /` : Ajout d'un véhicule (Agences uniquement).
-- `POST /{id}/images` : Upload de photos (Multipart/form-data).
+- `PUT /{id}` : Modification d'un véhicule (Propriétaire uniquement).
+- `DELETE /{id}` : Suppression d'un véhicule (Propriétaire uniquement).
+- `POST /{id}/images` : Upload de photos (Multipart/form-data, plusieurs fichiers possibles).
 
 ### 3. Réservations (`/bookings`)
 - `POST /create` : Créer une réservation. Le prix total est calculé automatiquement par le backend.
 - `GET /` : Historique des réservations de l'utilisateur connecté.
+- `GET /{id}` : Détails d'une réservation spécifique.
 
 ### 4. Profil & Favoris (`/users`)
 - `GET /me` : Infos de l'utilisateur connecté.
@@ -37,15 +40,34 @@ Le backend utilise des **JSON Web Tokens (JWT)**.
 - `POST /me/change-password` : Changement de mot de passe.
 - `GET /me/favorites` : Liste des IDs des véhicules favoris.
 - `POST /me/favorites/{id}` : Ajouter aux favoris.
+- `DELETE /me/favorites/{id}` : Retirer des favoris.
+- `POST /me/avatar` : Upload d'avatar (Multipart/form-data).
 
 ### 5. Module Agence (`/agencies`)
+- `GET /` : **Liste publique de toutes les agences** (Pagination: `skip`, `limit`).
+- `GET /me` : Profil de l'agence de l'utilisateur connecté.
 - `GET /dashboard` : Statistiques (Revenus, Vues, Total véhicules).
 - `PATCH /me` : Mise à jour du profil de l'agence.
+- `POST /me/logo` : Upload du logo de l'agence (Multipart/form-data).
 
 ### 6. Paiements Airtel Money (`/payments`)
 - **Important** : Actuellement en **mode simulation**.
 - `POST /airtel/collect` : Initier un paiement. Renvoie un `transaction_id`.
 - `POST /airtel/callback` : Simuler la validation du paiement (pour tester le changement de statut de la réservation).
+
+---
+
+## 🎯 Cas d'usage spécifiques
+
+### Comment uploader des images pour un nouveau véhicule ?
+1. Créer d'abord le véhicule via `POST /vehicles/` (renvoie un `id`).
+2. Puis uploader les images via `POST /vehicles/{id}/images`.
+
+### Comment filtrer les véhicules par agence ?
+Utilisez le paramètre `agency_id` : `GET /vehicles/?agency_id=5eb7cf5a86d9755df3a6c593`
+
+### Upload multiple d'images
+L'endpoint `POST /vehicles/{id}/images` accepte plusieurs fichiers en une seule requête (FormData avec champ `files[]`).
 
 ---
 

@@ -53,3 +53,17 @@ async def create_reservation(
 async def list_user_reservations(current_user: User = Depends(get_current_user)):
     reservations = await Reservation.find(Reservation.user_id == current_user.id).to_list()
     return reservations
+
+@router.get("/{id}", response_model=ReservationOut)
+async def get_reservation(
+    id: PydanticObjectId,
+    current_user: User = Depends(get_current_user)
+):
+    reservation = await Reservation.get(id)
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Réservation non trouvée")
+    
+    if reservation.user_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Non autorisé")
+    
+    return reservation

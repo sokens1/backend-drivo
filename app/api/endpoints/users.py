@@ -1,6 +1,8 @@
 from typing import List
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, File, UploadFile
 from beanie import PydanticObjectId
+import os
+import uuid
 from app.models.user import User
 from app.models.vehicle import Vehicle
 from app.schemas.user import UserOut
@@ -68,3 +70,24 @@ async def remove_favorite(
 @router.get("/me/favorites", response_model=List[PydanticObjectId])
 async def list_favorites(current_user: User = Depends(get_current_user)):
     return current_user.favorites
+
+@router.post("/me/avatar", status_code=status.HTTP_200_OK)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    upload_dir = "uploads/avatars"
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+    
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = os.path.join(upload_dir, filename)
+    
+    with open(filepath, "wb") as buffer:
+        content = await file.read()
+        buffer.write(content)
+    
+    avatar_url = f"/uploads/avatars/{filename}"
+    # On pourrait ajouter un champ avatar_url au modèle User
+    return {"avatar_url": avatar_url, "message": "Avatar uploadé avec succès"}
