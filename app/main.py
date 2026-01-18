@@ -19,7 +19,7 @@ app = FastAPI(title="Drivo API", version="1.0.0")
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:5173",  # Ajout de Vite par précaution
+    "http://localhost:5173",
     "https://drivo-frontend.vercel.app",
 ]
 

@@ -50,25 +50,23 @@ async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
             print(f"DEBUG: Agency profile not found for user {current_user.id}")
             raise HTTPException(status_code=404, detail="Profil d'agence non trouvé")
 
-        # Statistiques véhicules
-        agency_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).to_list()
-        total_vehicles = len(agency_vehicles)
-        total_views = sum(int(v.views or 0) for v in agency_vehicles)
+        # Statistiques
+        total_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).count()
         
-        # Statistiques réservations
+        # Fetch all vehicles for the agency to get their IDs and views
+        agency_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).to_list()
         vehicle_ids = [v.id for v in agency_vehicles]
+        
+        # Calculate total views
+        total_views = sum(int(v.views or 0) for v in agency_vehicles)
+
         reservations = await Reservation.find(Reservation.vehicle_id.in_(vehicle_ids)).to_list()
         
         total_reservations = len(reservations)
-        
-        # Calcul du revenu avec conversion explicite en float
-        total_revenue = 0.0
-        for r in reservations:
-            if r.status in ["completed", "confirmed"]:
-                total_revenue += float(r.total_price or 0.0)
+        total_revenue = sum(float(r.total_price or 0.0) for r in reservations if r.status in ["completed", "confirmed"])
         
         # Véhicules les plus vus
-        most_viewed = sorted(agency_vehicles, key=lambda x: (x.views or 0), reverse=True)[:5]
+        most_viewed = await Vehicle.find(Vehicle.agency_id == agency.id).sort("-views").limit(5).to_list()
         
         print(f"DEBUG: Dashboard computed: veh={total_vehicles}, views={total_views}, rev={total_revenue}")
         
