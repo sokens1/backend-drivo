@@ -1,5 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, status, Depends
+from beanie import PydanticObjectId
 from app.models.reservation import Reservation
 from app.models.vehicle import Vehicle
 from app.models.user import User
