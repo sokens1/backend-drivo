@@ -9,6 +9,7 @@ from app.schemas.user import UserOut
 from app.schemas.user_update import UserUpdate, PasswordUpdate
 from app.core.security import get_password_hash, verify_password
 from app.api.deps import get_current_user
+from app.core.cloudinary import upload_image
 
 router = APIRouter()
 
@@ -81,18 +82,12 @@ async def upload_avatar(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
 ):
-    upload_dir = "uploads/avatars"
-    if not os.path.exists(upload_dir):
-        os.makedirs(upload_dir)
+    url = await upload_image(file.file, folder="avatars")
+    if not url:
+        raise HTTPException(status_code=500, detail="Erreur lors de l'upload de l'avatar")
     
-    ext = os.path.splitext(file.filename)[1]
-    filename = f"{uuid.uuid4()}{ext}"
-    filepath = os.path.join(upload_dir, filename)
+    # Si on veut stocker l'URL dans le profil
+    # current_user.avatar_url = url
+    # await current_user.save()
     
-    with open(filepath, "wb") as buffer:
-        content = await file.read()
-        buffer.write(content)
-    
-    avatar_url = f"/uploads/avatars/{filename}"
-    # On pourrait ajouter un champ avatar_url au modèle User
-    return {"avatar_url": avatar_url, "message": "Avatar uploadé avec succès"}
+    return {"avatar_url": url, "message": "Avatar uploadé avec succès"}

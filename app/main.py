@@ -31,15 +31,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Chemin absolu pour le dossier uploads
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-upload_path = os.path.join(BASE_DIR, "..", "uploads")
-if not os.path.exists(upload_path):
-    os.makedirs(upload_path)
-
-# Servir les fichiers statiques
-app.mount("/uploads", StaticFiles(directory=upload_path), name="uploads")
-
 app.include_router(api_router, prefix="/api/v1")
 
 @app.on_event("startup")

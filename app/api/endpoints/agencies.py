@@ -10,6 +10,7 @@ from app.models.reservation import Reservation
 from app.schemas.agency import AgencyOut, AgencyUpdate
 from app.schemas.dashboard import AgencyStats
 from app.api.deps import get_current_user
+from app.core.cloudinary import upload_image
 
 router = APIRouter()
 
@@ -89,19 +90,11 @@ async def upload_agency_logo(
     agency = await Agency.find_one(Agency.user_id == current_user.id)
     if not agency:
         raise HTTPException(status_code=404, detail="Profil d'agence non trouvé")
+        
+    url = await upload_image(file.file, folder="logos")
+    if not url:
+        raise HTTPException(status_code=500, detail="Erreur lors de l'upload du logo")
     
-    upload_dir = "uploads/logos"
-    if not os.path.exists(upload_dir):
-        os.makedirs(upload_dir)
-    
-    ext = os.path.splitext(file.filename)[1]
-    filename = f"{uuid.uuid4()}{ext}"
-    filepath = os.path.join(upload_dir, filename)
-    
-    with open(filepath, "wb") as buffer:
-        content = await file.read()
-        buffer.write(content)
-    
-    agency.logo_url = f"/uploads/logos/{filename}"
+    agency.logo_url = url
     await agency.save()
     return {"logo_url": agency.logo_url, "message": "Logo uploadé avec succès"}

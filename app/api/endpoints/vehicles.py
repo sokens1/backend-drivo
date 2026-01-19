@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.agency import Agency
 from app.schemas.vehicle import VehicleCreate, VehicleOut, VehicleUpdate
 from app.api.deps import get_current_user
+from app.core.cloudinary import upload_image
 
 router = APIRouter()
 
@@ -104,16 +105,9 @@ async def upload_vehicle_images(
 
     image_urls = []
     for file in files:
-        # Générer un nom de fichier unique
-        ext = os.path.splitext(file.filename)[1]
-        filename = f"{uuid.uuid4()}{ext}"
-        filepath = os.path.join(upload_dir, filename)
-        
-        with open(filepath, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
-        
-        image_urls.append(f"/uploads/{filename}")
+        url = await upload_image(file.file, folder="vehicles")
+        if url:
+            image_urls.append(url)
 
     vehicle.images.extend(image_urls)
     await vehicle.save()
