@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import List, Optional
-from beanie import Document, PydanticObjectId
+from beanie import Document, PydanticObjectId, Link
 from pydantic import Field
+from app.models.agency import Agency
 
 class Vehicle(Document):
-    agency_id: PydanticObjectId
+    agency: Link[Agency] = Field(..., alias="agency_id")
     title: str
     brand: str
     model: str

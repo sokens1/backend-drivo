@@ -34,8 +34,8 @@ async def create_vehicle(
 
     new_vehicle = Vehicle(
         **vehicle_in.model_dump(),
-        agency_id=agency.id if agency else current_user.id, # Si admin sans agence, id user par défaut (à affiner)
-        images=[] # Upload d'images à gérer plus tard
+        agency=agency.id if agency else current_user.id,
+        images=[] 
     )
     
     await new_vehicle.insert()
@@ -57,7 +57,7 @@ async def list_vehicles(
     if type:
         query["type"] = type
     if agency_id:
-        query["agency_id"] = PydanticObjectId(agency_id)
+        query[Vehicle.agency.id] = PydanticObjectId(agency_id)
     
     # Filtres de prix complexes avec MongoDB
     if min_price or max_price:
@@ -68,12 +68,13 @@ async def list_vehicles(
             price_query["$lte"] = max_price
         query["price"] = price_query
 
-    vehicles = await Vehicle.find(query).skip(skip).limit(limit).to_list()
+    # fetch_links=True pour inclure les détails de l'agence
+    vehicles = await Vehicle.find(query, fetch_links=True).skip(skip).limit(limit).to_list()
     return vehicles
 
 @router.get("/{id}", response_model=VehicleOut)
 async def get_vehicle(id: PydanticObjectId):
-    vehicle = await Vehicle.get(id)
+    vehicle = await Vehicle.get(id, fetch_links=True)
     if not vehicle:
         raise HTTPException(status_code=404, detail="Véhicule non trouvé")
     
@@ -130,7 +131,7 @@ async def update_vehicle(
     
     # Vérifier que l'utilisateur est propriétaire (agence) ou admin
     agency = await Agency.find_one(Agency.user_id == current_user.id)
-    if agency and vehicle.agency_id != agency.id and current_user.role != "admin":
+    if agency and vehicle.agency.id != agency.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Non autorisé")
     
     update_data = vehicle_in.model_dump(exclude_unset=True)
@@ -151,7 +152,7 @@ async def delete_vehicle(
     
     # Vérifier que l'utilisateur est propriétaire (agence) ou admin
     agency = await Agency.find_one(Agency.user_id == current_user.id)
-    if agency and vehicle.agency_id != agency.id and current_user.role != "admin":
+    if agency and vehicle.agency.id != agency.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Non autorisé")
     
     await vehicle.delete()

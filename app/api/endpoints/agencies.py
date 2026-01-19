@@ -7,7 +7,8 @@ from app.models.agency import Agency
 from app.models.user import User
 from app.models.vehicle import Vehicle
 from app.models.reservation import Reservation
-from app.schemas.agency import AgencyOut, AgencyUpdate, AgencyStats
+from app.schemas.agency import AgencyOut, AgencyUpdate
+from app.schemas.dashboard import AgencyStats
 from app.api.deps import get_current_user
 
 router = APIRouter()
@@ -50,7 +51,7 @@ async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
             raise HTTPException(status_code=404, detail="Profil d'agence non trouvé")
 
         # Statistiques
-        agency_vehicles = await Vehicle.find(Vehicle.agency_id == agency.id).to_list()
+        agency_vehicles = await Vehicle.find(Vehicle.agency.id == agency.id).to_list()
         total_vehicles = len(agency_vehicles)
         total_views = sum(int(v.views or 0) for v in agency_vehicles)
         
@@ -63,7 +64,7 @@ async def get_agency_dashboard(current_user: User = Depends(get_current_user)):
         total_revenue = sum(float(r.total_price or 0.0) for r in reservations if r.status in ["completed", "confirmed"])
         
         # Véhicules les plus vus
-        most_viewed = await Vehicle.find(Vehicle.agency_id == agency.id).sort("-views").limit(5).to_list()
+        most_viewed = await Vehicle.find(Vehicle.agency.id == agency.id).sort("-views").limit(5).to_list()
         
         return AgencyStats(
             total_vehicles=int(total_vehicles),

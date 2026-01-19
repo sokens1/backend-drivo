@@ -1,7 +1,6 @@
 from typing import List, Optional
 from pydantic import BaseModel
 from beanie import PydanticObjectId
-from app.schemas.vehicle import VehicleOut
 
 class AgencyBase(BaseModel):
     name: str
@@ -26,10 +25,3 @@ class AgencyOut(AgencyBase):
 
     class Config:
         from_attributes = True
-
-class AgencyStats(BaseModel):
-    total_vehicles: int
-    total_views: int
-    total_reservations: int
-    total_revenue: float
-    most_viewed_vehicles: List[VehicleOut]

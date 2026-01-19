@@ -67,9 +67,14 @@ async def remove_favorite(
     
     return {"message": "Véhicule retiré des favoris"}
 
-@router.get("/me/favorites", response_model=List[PydanticObjectId])
+from beanie.operators import In
+from app.schemas.vehicle import VehicleOut
+
+@router.get("/me/favorites", response_model=List[VehicleOut])
 async def list_favorites(current_user: User = Depends(get_current_user)):
-    return current_user.favorites
+    # Peupler les détails des véhicules favoris
+    vehicles = await Vehicle.find(In(Vehicle.id, current_user.favorites), fetch_links=True).to_list()
+    return vehicles
 
 @router.post("/me/avatar", status_code=status.HTTP_200_OK)
 async def upload_avatar(

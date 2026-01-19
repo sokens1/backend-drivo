@@ -2,6 +2,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from beanie import PydanticObjectId
 from datetime import datetime
+from app.schemas.agency import AgencyOut
 
 class VehicleBase(BaseModel):
     title: str
@@ -35,6 +36,7 @@ class VehicleUpdate(BaseModel):
 class VehicleOut(VehicleBase):
     id: PydanticObjectId
     agency_id: PydanticObjectId
+    agency: Optional[AgencyOut] = None # Peuplement via Link
     images: List[str] = []
     views: Optional[int] = 0
     available: Optional[bool] = True
