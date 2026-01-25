@@ -5,12 +5,15 @@ from datetime import datetime
 
 class UserBase(BaseModel):
     email: EmailStr
-    full_name: str
+    full_name: str = Field(..., alias="name")
     phone: str
 
+    class Config:
+        populate_by_name = True
+
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=8)
-    role: Optional[str] = "client"  # "client" ou "agency"
+    password: str = Field(..., min_length=6)
+    role: Optional[str] = "client"
     agency_name: Optional[str] = None
 
 class UserOut(UserBase):

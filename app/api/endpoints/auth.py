@@ -10,6 +10,7 @@ router = APIRouter()
 @router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def signup(user_in: UserCreate):
     try:
+        print(f"DEBUG: Signup request for {user_in.email}")
         # Vérifier si l'utilisateur existe déjà
         user = await User.find_one(User.email == user_in.email)
         if user:
@@ -22,6 +23,10 @@ async def signup(user_in: UserCreate):
         role = user_in.role if user_in.role in ["client", "agency", "agence"] else "client"
         if role == "agency":
             role = "agence"  # Normaliser
+            
+        # Si un nom d'agence est fourni, c'est forcément une agence
+        if user_in.agency_name:
+            role = "agence"
 
         # Créer le nouvel utilisateur
         new_user = User(

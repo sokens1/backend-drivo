@@ -26,10 +26,18 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Chemin absolu pour le dossier uploads (support local/legacy)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+upload_path = os.path.join(BASE_DIR, "..", "uploads")
+if not os.path.exists(upload_path):
+    os.makedirs(upload_path)
+app.mount("/uploads", StaticFiles(directory=upload_path), name="uploads")
 
 app.include_router(api_router, prefix="/api/v1")
 
