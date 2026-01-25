@@ -75,15 +75,25 @@ async def list_vehicles(
 
 @router.get("/{id}", response_model=VehicleOut)
 async def get_vehicle(id: PydanticObjectId):
-    vehicle = await Vehicle.get(id, fetch_links=True)
-    if not vehicle:
-        raise HTTPException(status_code=404, detail="Véhicule non trouvé")
-    
-    # Incrémenter les vues
-    vehicle.views += 1
-    await vehicle.save()
-    
-    return vehicle
+    try:
+        vehicle = await Vehicle.get(id, fetch_links=True)
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Véhicule non trouvé")
+        
+        # Incrémenter les vues
+        vehicle.views += 1
+        await vehicle.save()
+        
+        return vehicle
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"DEBUG VEHICLE: Error fetching vehicle {id}: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur interne lors de la récupération du véhicule: {str(e)}"
+        )
 
 @router.post("/{id}/images", response_model=VehicleOut)
 async def upload_vehicle_images(

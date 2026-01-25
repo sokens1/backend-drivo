@@ -26,5 +26,14 @@ class Vehicle(Document):
     adapted_roads: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
+    @property
+    def agency_id(self) -> Optional[PydanticObjectId]:
+        """Retourne l'ID de l'agence qu'elle soit peuplée ou non."""
+        if not self.agency:
+            return None
+        if isinstance(self.agency, Link):
+            return self.agency.ref.id
+        return self.agency.id
+
     class Settings:
         name = "vehicles"

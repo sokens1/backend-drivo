@@ -35,7 +35,7 @@ class VehicleUpdate(BaseModel):
 
 class VehicleOut(VehicleBase):
     id: PydanticObjectId
-    agency_id: PydanticObjectId
+    agency_id: Optional[PydanticObjectId] = None
     agency: Optional[AgencyOut] = None # Peuplement via Link
     images: List[str] = []
     views: Optional[int] = 0
@@ -44,3 +44,4 @@ class VehicleOut(VehicleBase):
 
     class Config:
         from_attributes = True
+        populate_by_name = True
